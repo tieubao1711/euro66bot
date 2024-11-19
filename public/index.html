@@ -35,9 +35,10 @@
             margin-bottom: 20px;
         }
 
-        .filter select {
+        .filter input, .filter button {
             padding: 5px 10px;
             font-size: 16px;
+            margin-right: 10px;
         }
 
         .download {
@@ -63,10 +64,8 @@
 
     <div class="filter">
         <label for="date">Chọn ngày:</label>
-        <select id="date" onchange="fetchData()">
-            <option value="today">Hôm nay</option>
-            <option value="3days">3 ngày gần nhất</option>
-        </select>
+        <input type="date" id="date" />
+        <button onclick="fetchData()">Xem thống kê</button>
     </div>
 
     <div id="dataContainer">
@@ -74,93 +73,120 @@
     </div>
 
     <script>
+        // Lấy groupId từ query string
+        const urlParams = new URLSearchParams(window.location.search);
+        const groupId = urlParams.get('id');
+
+        if (!groupId) {
+            alert('Thiếu groupId trong URL. Vui lòng thêm ?id={groupId} vào URL.');
+            throw new Error('Missing groupId in URL');
+        }
+
         async function fetchData() {
-            const response = await fetch('/api/transactions');
-            const transactions = await response.json();
+            const dateInput = document.getElementById('date').value;
 
-            const container = document.getElementById('dataContainer');
-            container.innerHTML = ''; // Clear nội dung cũ
+            // Kiểm tra nếu chưa chọn ngày
+            if (!dateInput) {
+                alert('Vui lòng chọn ngày!');
+                return;
+            }
 
-            // Phân loại giao dịch
-            const inTransactions = transactions.filter(t => t.type === 'in');
-            const outTransactions = transactions.filter(t => t.type === 'out');
+            // Định dạng ngày về MM/DD/YYYY
+            const selectedDate = new Date(dateInput);
+            const formattedDate = `${selectedDate.getMonth() + 1}/${selectedDate.getDate()}/${selectedDate.getFullYear()}`;
 
-            // Tính tổng tiền
-            const totalIn = inTransactions.reduce((sum, t) => sum + t.amount, 0);
-            const totalOut = outTransactions.reduce((sum, t) => sum + t.amount, 0);
+            try {
+                // Gọi API
+                const response = await fetch(`/api/transactions?id=${groupId}&date=${formattedDate}`);
+                const transactions = await response.json();
 
-            // Hiển thị dữ liệu nạp tiền
-            const inHtml = `
-                <h3>Giao dịch nạp tiền (${inTransactions.length} lần)</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Thời gian</th>
-                            <th>Số tiền</th>
-                            <th>Người nhận</th>
-                            <th>Người thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${inTransactions.map(t => `
+                const container = document.getElementById('dataContainer');
+                container.innerHTML = ''; // Clear nội dung cũ
+
+                // Phân loại giao dịch
+                const inTransactions = transactions.filter(t => t.type === 'in');
+                const outTransactions = transactions.filter(t => t.type === 'out');
+
+                // Tính tổng tiền
+                const totalIn = inTransactions.reduce((sum, t) => sum + t.amount, 0);
+                const totalOut = outTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+                // Hiển thị dữ liệu nạp tiền
+                const inHtml = `
+                    <h3>Giao dịch nạp tiền (${inTransactions.length} lần)</h3>
+                    <table>
+                        <thead>
                             <tr>
-                                <td>${new Date(t.createdAt).toLocaleTimeString('vi-VN')}</td>
-                                <td>${t.amount.toLocaleString('vi-VN')} VND</td>
-                                <td>${t.username}</td>
-                                <td>${t.operator || 'N/A'}</td>
+                                <th>Thời gian</th>
+                                <th>Số tiền</th>
+                                <th>Người nhận</th>
+                                <th>Người thao tác</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+                        </thead>
+                        <tbody>
+                            ${inTransactions.map(t => `
+                                <tr>
+                                    <td>${new Date(t.createdAt).toLocaleTimeString('vi-VN')}</td>
+                                    <td>${t.amount.toLocaleString('vi-VN')} VND</td>
+                                    <td>${t.username}</td>
+                                    <td>${t.operator || 'N/A'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
 
-            // Hiển thị dữ liệu rút tiền
-            const outHtml = `
-                <h3>Giao dịch rút tiền (${outTransactions.length} lần)</h3>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Thời gian</th>
-                            <th>Số tiền</th>
-                            <th>Người nhận</th>
-                            <th>Người thao tác</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${outTransactions.map(t => `
+                // Hiển thị dữ liệu rút tiền
+                const outHtml = `
+                    <h3>Giao dịch rút tiền (${outTransactions.length} lần)</h3>
+                    <table>
+                        <thead>
                             <tr>
-                                <td>${new Date(t.createdAt).toLocaleTimeString('vi-VN')}</td>
-                                <td>${t.amount.toLocaleString('vi-VN')} VND</td>
-                                <td>${t.username}</td>
-                                <td>${t.operator || 'N/A'}</td>
+                                <th>Thời gian</th>
+                                <th>Số tiền</th>
+                                <th>Người nhận</th>
+                                <th>Người thao tác</th>
                             </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
+                        </thead>
+                        <tbody>
+                            ${outTransactions.map(t => `
+                                <tr>
+                                    <td>${new Date(t.createdAt).toLocaleTimeString('vi-VN')}</td>
+                                    <td>${t.amount.toLocaleString('vi-VN')} VND</td>
+                                    <td>${t.username}</td>
+                                    <td>${t.operator || 'N/A'}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                `;
 
-            // Tổng kết
-            const summaryHtml = `
-                <h3>Tổng kết</h3>
-                <table>
-                    <tbody>
-                        <tr>
-                            <td>Tổng số tiền nạp:</td>
-                            <td>${totalIn.toLocaleString('vi-VN')} VND</td>
-                        </tr>
-                        <tr>
-                            <td>Tổng số tiền rút:</td>
-                            <td>${totalOut.toLocaleString('vi-VN')} VND</td>
-                        </tr>
-                        <tr>
-                            <td>Số tiền cần thanh toán:</td>
-                            <td>${(totalIn - totalOut).toLocaleString('vi-VN')} VND</td>
-                        </tr>
-                    </tbody>
-                </table>
-            `;
+                // Tổng kết
+                const summaryHtml = `
+                    <h3>Tổng kết</h3>
+                    <table>
+                        <tbody>
+                            <tr>
+                                <td>Tổng số tiền nạp:</td>
+                                <td>${totalIn.toLocaleString('vi-VN')} VND</td>
+                            </tr>
+                            <tr>
+                                <td>Tổng số tiền rút:</td>
+                                <td>${totalOut.toLocaleString('vi-VN')} VND</td>
+                            </tr>
+                            <tr>
+                                <td>Số tiền cần thanh toán:</td>
+                                <td>${(totalIn - totalOut).toLocaleString('vi-VN')} VND</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                `;
 
-            container.innerHTML = inHtml + outHtml + summaryHtml;
+                container.innerHTML = inHtml + outHtml + summaryHtml;
+            } catch (error) {
+                console.error('Error fetching data:', error);
+                alert('Có lỗi xảy ra khi lấy dữ liệu. Vui lòng thử lại.');
+            }
         }
 
         // Tự động load dữ liệu khi mở trang
