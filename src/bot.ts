@@ -1,4 +1,4 @@
-import { Telegraf } from 'telegraf';
+import { Context, Telegraf } from 'telegraf';
 import { Transaction } from './models/Transaction';
 import { allowedUsers } from './config/allowedUsers';
 
@@ -32,8 +32,7 @@ bot.command('in', async (ctx) => {
     await Transaction.create({ type: 'in', amount, username });
     //ctx.reply(`Ghi nhận giao dịch nạp tiền: ${amount.toLocaleString('vi-VN')} VND`);
 
-    const report = await getReport();
-    ctx.reply(report);
+    getReport(ctx);
 });
 
 // Lệnh /out - Ghi nhận giao dịch rút tiền
@@ -59,8 +58,7 @@ bot.command('out', async (ctx) => {
     await Transaction.create({ type: 'out', amount, username });
     //ctx.reply(`Ghi nhận giao dịch rút tiền: ${amount.toLocaleString('vi-VN')} VND`);
 
-    const report = await getReport();
-    ctx.reply(report);
+    getReport(ctx);
 });
 
 // Lệnh /report - Báo cáo giao dịch
@@ -73,12 +71,11 @@ bot.command('report', async (ctx) => {
         return ctx.reply('Bạn không có quyền thao tác bot trong group này.');
     }
 
-    const report = await getReport();
-    ctx.reply(report);
+    getReport(ctx);
 });
 
 
-const getReport = async function() {
+const getReport = async function(ctx: Context) {
     const transactions = await Transaction.find().sort({ createdAt: -1 }).limit(6);
     const inTransactions = transactions.filter((t) => t.type === 'in').slice(0, 3);
     const outTransactions = transactions.filter((t) => t.type === 'out').slice(0, 3);
@@ -107,5 +104,18 @@ Amount paid: 0 VND
 Remaining amount: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
 `;
 
-    return report;
-}
+    // Gửi báo cáo cùng nút inline
+    await ctx.reply(report, {
+        reply_markup: {
+            inline_keyboard: [
+                [
+                    {
+                        text: 'View Full Report', // Văn bản nút
+                        url: 'https://report.bundaumamtom.shop/' // URL của nút
+                    }
+                ]
+            ]
+        }
+    });
+};
+
