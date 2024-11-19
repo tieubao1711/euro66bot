@@ -1,13 +1,72 @@
 import { Context, Telegraf } from 'telegraf';
 import { Transaction } from './models/Transaction';
 import { allowedUsers } from './config/allowedUsers';
+import { Group } from './models/Group';
 
 export const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN || '');
 
-// ID của group được phép hoạt động
-const ALLOWED_GROUP_ID = -4552514797;
-
 bot.start((ctx) => ctx.reply('Chào mừng bạn đến với EURO66 BOT!'));
+
+const isAllowed = async (ctx: Context): Promise<boolean> => {
+    const groupId = ctx.chat?.id.toString();
+    const username = ctx.message?.from.username;
+
+    if (!groupId || !username) return false;
+
+    const group = await Group.findOne({ groupId });
+    if (!group) return false;
+
+    return group.allowedUsers.includes(username);
+};
+
+bot.command('allow_group', async (ctx) => {
+    if (!ctx.chat || ctx.chat.type !== 'group' && ctx.chat.type !== 'supergroup') {
+        return ctx.reply('Lệnh này chỉ sử dụng được trong nhóm.');
+    }
+
+    const groupId = ctx.chat.id.toString();
+
+    try {
+        let group = await Group.findOne({ groupId });
+        if (!group) {
+            group = await Group.create({ groupId });
+        }
+
+        return ctx.reply(`Nhóm ${groupId} đã được phép sử dụng bot.`);
+    } catch (error) {
+        console.error(error);
+        return ctx.reply('Có lỗi xảy ra khi thêm nhóm.');
+    }
+});
+
+bot.command('allow_user', async (ctx) => {
+    const username = ctx.message.text.split(' ')[1];
+    if (!username) {
+        return ctx.reply('Hãy nhập username. Ví dụ: /allow_user username');
+    }
+
+    const groupId = ctx.chat?.id.toString();
+    if (!groupId) {
+        return ctx.reply('Lệnh này chỉ có thể sử dụng trong nhóm.');
+    }
+
+    try {
+        const group = await Group.findOne({ groupId });
+        if (!group) {
+            return ctx.reply('Nhóm này chưa được phép sử dụng bot. Hãy sử dụng /allow_group trước.');
+        }
+
+        if (!group.allowedUsers.includes(username)) {
+            group.allowedUsers.push(username);
+            await group.save();
+        }
+
+        return ctx.reply(`Người dùng @${username} đã được phép sử dụng bot.`);
+    } catch (error) {
+        console.error(error);
+        return ctx.reply('Có lỗi xảy ra khi thêm người dùng.');
+    }
+});
 
 // Lệnh /in - Ghi nhận giao dịch nạp tiền
 bot.command('in', async (ctx) => {
@@ -15,13 +74,8 @@ bot.command('in', async (ctx) => {
         return ctx.reply('Lệnh này chỉ hoạt động trong group.');
     }
 
-    if (ctx.chat.id !== ALLOWED_GROUP_ID) {
-        return ctx.reply('Bạn không có quyền thao tác bot trong group này.');
-    }
-
-    const username = ctx.message.from.username;
-    if (!allowedUsers.includes(username || '')) {
-        return ctx.reply('Bạn không có quyền thao tác bot này.');
+    if (!(await isAllowed(ctx))) {
+        return ctx.reply('Bạn không có quyền sử dụng lệnh này.');
     }
 
     const amount = parseInt(ctx.message.text.split(' ')[1], 10);
@@ -29,7 +83,7 @@ bot.command('in', async (ctx) => {
         return ctx.reply('Hãy nhập số tiền hợp lệ. Ví dụ: /in 1000000');
     }
 
-    await Transaction.create({ type: 'in', amount, username });
+    await Transaction.create({ type: 'in', amount, username: ctx.message?.from.username });
     //ctx.reply(`Ghi nhận giao dịch nạp tiền: ${amount.toLocaleString('vi-VN')} VND`);
 
     getReport(ctx);
@@ -40,14 +94,9 @@ bot.command('out', async (ctx) => {
     if (ctx.chat.type !== 'group' && ctx.chat.type !== 'supergroup') {
         return ctx.reply('Lệnh này chỉ hoạt động trong group.');
     }
-
-    if (ctx.chat.id !== ALLOWED_GROUP_ID) {
-        return ctx.reply('Bạn không có quyền thao tác bot trong group này.');
-    }
-
-    const username = ctx.message.from.username;
-    if (!allowedUsers.includes(username || '')) {
-        return ctx.reply('Bạn không có quyền thao tác bot này.');
+    
+    if (!(await isAllowed(ctx))) {
+        return ctx.reply('Bạn không có quyền sử dụng lệnh này.');
     }
 
     const amount = parseInt(ctx.message.text.split(' ')[1], 10);
@@ -55,21 +104,8 @@ bot.command('out', async (ctx) => {
         return ctx.reply('Hãy nhập số tiền hợp lệ. Ví dụ: /out 1000000');
     }
 
-    await Transaction.create({ type: 'out', amount, username });
+    await Transaction.create({ type: 'out', amount, username: ctx.message?.from.username });
     //ctx.reply(`Ghi nhận giao dịch rút tiền: ${amount.toLocaleString('vi-VN')} VND`);
-
-    getReport(ctx);
-});
-
-// Lệnh /report - Báo cáo giao dịch
-bot.command('report', async (ctx) => {
-    if (ctx.chat.type !== 'group' && ctx.chat.type !== 'supergroup') {
-        return ctx.reply('Lệnh này chỉ hoạt động trong group.');
-    }
-
-    if (ctx.chat.id !== ALLOWED_GROUP_ID) {
-        return ctx.reply('Bạn không có quyền thao tác bot trong group này.');
-    }
 
     getReport(ctx);
 });
