@@ -75,8 +75,21 @@ bot.command('report', async (ctx) => {
 });
 
 const getReport = async function(ctx: Context) {
-    // Lấy toàn bộ tổng số tiền nạp và rút
-    const allTransactions = await Transaction.find();
+    // Lấy mốc thời gian 6:00 sáng hôm nay theo GMT+7
+    const now = new Date();
+    const startOfTodayUTC = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), -1)); // 6 giờ sáng GMT+7 = 23:00 ngày hôm trước theo UTC
+    const startOfTomorrowUTC = new Date(startOfTodayUTC);
+    startOfTomorrowUTC.setUTCDate(startOfTodayUTC.getUTCDate() + 1); // 6 giờ sáng GMT+7 ngày mai
+
+    // Lấy tất cả giao dịch từ 6:00 sáng hôm nay đến 6:00 sáng ngày mai
+    const allTransactions = await Transaction.find({
+        createdAt: {
+            $gte: startOfTodayUTC,
+            $lt: startOfTomorrowUTC,
+        },
+    });
+
+    // Tính tổng số tiền nạp và rút
     const totalIn = allTransactions
         .filter((t) => t.type === 'in')
         .reduce((sum, t) => sum + t.amount, 0);
@@ -94,10 +107,10 @@ const getReport = async function(ctx: Context) {
 
     const report = `
 Giao dịch nạp tiền (${inTransactions.length} lần gần nhất):
-${inTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString()}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
+${inTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString('vi-VN')}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
 Giao dịch rút tiền (${outTransactions.length} lần gần nhất):
-${outTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString()}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
+${outTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString('vi-VN')}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
 Phí nạp tiền: ${(inRate * 100).toFixed(0)}%
 Tổng số tiền nạp (toàn bộ): ${totalIn.toLocaleString('vi-VN')} VND
@@ -124,5 +137,3 @@ Số tiền còn lại: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
         }
     });
 };
-
-
