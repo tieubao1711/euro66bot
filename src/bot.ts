@@ -30,7 +30,10 @@ bot.command('in', async (ctx) => {
     }
 
     await Transaction.create({ type: 'in', amount, username });
-    ctx.reply(`Ghi nhận giao dịch nạp tiền: ${amount.toLocaleString('vi-VN')} VND`);
+    //ctx.reply(`Ghi nhận giao dịch nạp tiền: ${amount.toLocaleString('vi-VN')} VND`);
+
+    const report = await getReport();
+    ctx.reply(report);
 });
 
 // Lệnh /out - Ghi nhận giao dịch rút tiền
@@ -54,7 +57,10 @@ bot.command('out', async (ctx) => {
     }
 
     await Transaction.create({ type: 'out', amount, username });
-    ctx.reply(`Ghi nhận giao dịch rút tiền: ${amount.toLocaleString('vi-VN')} VND`);
+    //ctx.reply(`Ghi nhận giao dịch rút tiền: ${amount.toLocaleString('vi-VN')} VND`);
+
+    const report = await getReport();
+    ctx.reply(report);
 });
 
 // Lệnh /report - Báo cáo giao dịch
@@ -67,6 +73,12 @@ bot.command('report', async (ctx) => {
         return ctx.reply('Bạn không có quyền thao tác bot trong group này.');
     }
 
+    const report = await getReport();
+    ctx.reply(report);
+});
+
+
+const getReport = async function() {
     const transactions = await Transaction.find().sort({ createdAt: -1 }).limit(6);
     const inTransactions = transactions.filter((t) => t.type === 'in').slice(0, 3);
     const outTransactions = transactions.filter((t) => t.type === 'out').slice(0, 3);
@@ -74,26 +86,26 @@ bot.command('report', async (ctx) => {
     const totalIn = inTransactions.reduce((sum, t) => sum + t.amount, 0);
     const totalOut = outTransactions.reduce((sum, t) => sum + t.amount, 0);
 
-    const inRate = 0.04; // Phí nạp tiền: 4%
+    const inRate = 0.04; // Deposit fee: 4%
     const inTotal = totalIn * (1 - inRate);
 
     const report = `
-Giao dịch nạp tiền (${inTransactions.length} lần):
+Deposit transactions (${inTransactions.length} times):
 ${inTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString()}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
-Giao dịch rút tiền (${outTransactions.length} lần):
+Withdrawal transactions (${outTransactions.length} times):
 ${outTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString()}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
-Phí nạp tiền: ${(inRate * 100).toFixed(0)}%
-Tổng số tiền nạp: ${totalIn.toLocaleString('vi-VN')} VND
-Tổng sau phí: ${inTotal.toLocaleString('vi-VN')} VND｜0
+Deposit fee: ${(inRate * 100).toFixed(0)}%
+Total deposit amount: ${totalIn.toLocaleString('vi-VN')} VND
+Total after fee: ${inTotal.toLocaleString('vi-VN')} VND｜0
 
-Tổng số tiền rút: ${totalOut.toLocaleString('vi-VN')} VND｜0
+Total withdrawal amount: ${totalOut.toLocaleString('vi-VN')} VND｜0
 
-Số tiền cần thanh toán: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
-Số tiền đã thanh toán: 0 VND
-Số tiền còn lại: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
+Amount payable: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
+Amount paid: 0 VND
+Remaining amount: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
 `;
 
-    ctx.reply(report);
-});
+    return report;
+}
