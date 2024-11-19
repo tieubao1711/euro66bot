@@ -87,21 +87,21 @@ const getReport = async function(ctx: Context) {
     const inTotal = totalIn * (1 - inRate);
 
     const report = `
-Deposit transactions (${inTransactions.length} times):
+Giao dịch nạp tiền (${inTransactions.length} lần):
 ${inTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString()}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
-Withdrawal transactions (${outTransactions.length} times):
+Giao dịch rút tiền (${outTransactions.length} lần):
 ${outTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString()}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
-Deposit fee: ${(inRate * 100).toFixed(0)}%
-Total deposit amount: ${totalIn.toLocaleString('vi-VN')} VND
-Total after fee: ${inTotal.toLocaleString('vi-VN')} VND｜0
+Phí nạp tiền: ${(inRate * 100).toFixed(0)}%
+Tổng số tiền nạp: ${totalIn.toLocaleString('vi-VN')} VND
+Tổng sau phí: ${inTotal.toLocaleString('vi-VN')} VND｜0
 
-Total withdrawal amount: ${totalOut.toLocaleString('vi-VN')} VND｜0
+Tổng số tiền rút: ${totalOut.toLocaleString('vi-VN')} VND｜0
 
-Amount payable: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
-Amount paid: 0 VND
-Remaining amount: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
+Số tiền cần thanh toán: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
+Số tiền đã thanh toán: 0 VND
+Số tiền còn lại: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
 `;
 
     // Gửi báo cáo cùng nút inline
@@ -110,7 +110,7 @@ Remaining amount: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
             inline_keyboard: [
                 [
                     {
-                        text: 'View Full Report', // Văn bản nút
+                        text: 'Xem thống kê đầy đủ', // Văn bản nút
                         url: 'https://report.bundaumamtom.shop/' // URL của nút
                     }
                 ]
