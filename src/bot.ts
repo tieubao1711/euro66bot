@@ -160,7 +160,15 @@ const getReport = async function(ctx: Context) {
         .reduce((sum, t) => sum + t.amount, 0);
 
     // Lấy 7 giao dịch gần nhất
-    const recentTransactions = await Transaction.find().sort({ createdAt: -1 }).limit(7);
+    const recentTransactions = await Transaction.find({
+        groupId,
+        createdAt: {
+            $gte: startOfTodayUTC,
+            $lt: startOfTomorrowUTC,
+        },})
+        .sort({ createdAt: -1 })
+        .limit(7);
+
     const inTransactions = recentTransactions.filter((t) => t.type === 'in').slice(0, 3);
     const outTransactions = recentTransactions.filter((t) => t.type === 'out').slice(0, 3);
 
@@ -199,3 +207,39 @@ Số tiền còn lại: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
         }
     });
 };
+
+bot.command('huylenh', async (ctx) => {
+    if (ctx.chat.type !== 'group' && ctx.chat.type !== 'supergroup') {
+        return ctx.reply('Lệnh này chỉ hoạt động trong nhóm.');
+    }
+
+    if (!(await isAllowed(ctx))) {
+        return ctx.reply('Bạn không có quyền sử dụng lệnh này.');
+    }
+
+    const groupId = ctx.chat.id.toString();
+    const args = ctx.message.text.split(' ');
+
+    if (args.length < 2 || (args[1] !== 'in' && args[1] !== 'out')) {
+        return ctx.reply('Hãy sử dụng lệnh đúng cú pháp: /huylenh <in/out>');
+    }
+
+    const type = args[1]; // Loại giao dịch cần hủy (in hoặc out)
+
+    try {
+        // Tìm giao dịch gần nhất theo loại và groupId
+        const transaction = await Transaction.findOne({ groupId, type }).sort({ createdAt: -1 });
+
+        if (!transaction) {
+            return ctx.reply(`Không tìm thấy giao dịch ${type} nào trong nhóm này.`);
+        }
+
+        // Xóa giao dịch
+        await transaction.deleteOne();
+
+        ctx.reply(`Giao dịch ${type} gần nhất đã được hủy thành công.`);
+    } catch (error) {
+        console.error('Lỗi khi hủy giao dịch:', error);
+        ctx.reply('Có lỗi xảy ra khi hủy giao dịch. Vui lòng thử lại.');
+    }
+});
