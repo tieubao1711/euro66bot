@@ -1,6 +1,5 @@
 import { Context, Telegraf } from 'telegraf';
 import { Transaction } from './models/Transaction';
-import { allowedUsers } from './config/allowedUsers';
 import { Group } from './models/Group';
 
 export const bot = new Telegraf(process.env.TELEGRAM_BOT_TOKEN || '');
@@ -83,10 +82,22 @@ bot.command('in', async (ctx) => {
         return ctx.reply('Hãy nhập số tiền hợp lệ. Ví dụ: /in 1000000');
     }
 
-    await Transaction.create({ type: 'in', amount, username: ctx.message?.from.username });
-    //ctx.reply(`Ghi nhận giao dịch nạp tiền: ${amount.toLocaleString('vi-VN')} VND`);
+    const groupId = ctx.chat.id.toString(); // Lấy groupId từ chat context
+    const username = ctx.message?.from.username || 'Unknown';
 
-    getReport(ctx);
+    try {
+        await Transaction.create({
+            type: 'in',
+            amount,
+            username,
+            groupId, // Lưu groupId vào Transaction
+        });
+
+        getReport(ctx); // Gọi hàm báo cáo
+    } catch (error) {
+        console.error('Lỗi khi ghi nhận giao dịch:', error);
+        ctx.reply('Có lỗi xảy ra khi ghi nhận giao dịch.');
+    }
 });
 
 // Lệnh /out - Ghi nhận giao dịch rút tiền
@@ -104,10 +115,22 @@ bot.command('out', async (ctx) => {
         return ctx.reply('Hãy nhập số tiền hợp lệ. Ví dụ: /out 1000000');
     }
 
-    await Transaction.create({ type: 'out', amount, username: ctx.message?.from.username });
-    //ctx.reply(`Ghi nhận giao dịch rút tiền: ${amount.toLocaleString('vi-VN')} VND`);
+    const groupId = ctx.chat.id.toString(); // Lấy groupId từ chat context
+    const username = ctx.message?.from.username || 'Unknown';
 
-    getReport(ctx);
+    try {
+        await Transaction.create({
+            type: 'out',
+            amount,
+            username,
+            groupId, // Lưu groupId vào Transaction
+        });
+
+        getReport(ctx); // Gọi hàm báo cáo
+    } catch (error) {
+        console.error('Lỗi khi ghi nhận giao dịch:', error);
+        ctx.reply('Có lỗi xảy ra khi ghi nhận giao dịch.');
+    }
 });
 
 const getReport = async function(ctx: Context) {
