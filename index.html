@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thống Kê Giao Dịch</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f4f4f4;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        .filter {
+            margin-bottom: 20px;
+        }
+
+        .filter select {
+            padding: 5px 10px;
+            font-size: 16px;
+        }
+
+        .download {
+            text-align: right;
+            margin-bottom: 20px;
+        }
+
+        .download a {
+            text-decoration: none;
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: white;
+            border-radius: 4px;
+        }
+
+        .download a:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h2>Thống Kê Giao Dịch</h2>
+
+    <div class="filter">
+        <label for="date">Chọn ngày:</label>
+        <select id="date" onchange="fetchData()">
+            <option value="today">Hôm nay</option>
+            <option value="3days">3 ngày gần nhất</option>
+        </select>
+    </div>
+
+    <div id="dataContainer">
+        <!-- Nội dung giao dịch sẽ được load ở đây -->
+    </div>
+
+    <script>
+        async function fetchData() {
+            const response = await fetch('/api/transactions');
+            const transactions = await response.json();
+
+            const container = document.getElementById('dataContainer');
+            container.innerHTML = ''; // Clear nội dung cũ
+
+            // Phân loại giao dịch
+            const inTransactions = transactions.filter(t => t.type === 'in');
+            const outTransactions = transactions.filter(t => t.type === 'out');
+
+            // Tính tổng tiền
+            const totalIn = inTransactions.reduce((sum, t) => sum + t.amount, 0);
+            const totalOut = outTransactions.reduce((sum, t) => sum + t.amount, 0);
+
+            // Hiển thị dữ liệu nạp tiền
+            const inHtml = `
+                <h3>Giao dịch nạp tiền (${inTransactions.length} lần)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Số tiền</th>
+                            <th>Người nhận</th>
+                            <th>Người thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${inTransactions.map(t => `
+                            <tr>
+                                <td>${new Date(t.createdAt).toLocaleTimeString('vi-VN')}</td>
+                                <td>${t.amount.toLocaleString('vi-VN')} VND</td>
+                                <td>${t.username}</td>
+                                <td>${t.operator || 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // Hiển thị dữ liệu rút tiền
+            const outHtml = `
+                <h3>Giao dịch rút tiền (${outTransactions.length} lần)</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Thời gian</th>
+                            <th>Số tiền</th>
+                            <th>Người nhận</th>
+                            <th>Người thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${outTransactions.map(t => `
+                            <tr>
+                                <td>${new Date(t.createdAt).toLocaleTimeString('vi-VN')}</td>
+                                <td>${t.amount.toLocaleString('vi-VN')} VND</td>
+                                <td>${t.username}</td>
+                                <td>${t.operator || 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // Tổng kết
+            const summaryHtml = `
+                <h3>Tổng kết</h3>
+                <table>
+                    <tbody>
+                        <tr>
+                            <td>Tổng số tiền nạp:</td>
+                            <td>${totalIn.toLocaleString('vi-VN')} VND</td>
+                        </tr>
+                        <tr>
+                            <td>Tổng số tiền rút:</td>
+                            <td>${totalOut.toLocaleString('vi-VN')} VND</td>
+                        </tr>
+                        <tr>
+                            <td>Số tiền cần thanh toán:</td>
+                            <td>${(totalIn - totalOut).toLocaleString('vi-VN')} VND</td>
+                        </tr>
+                    </tbody>
+                </table>
+            `;
+
+            container.innerHTML = inHtml + outHtml + summaryHtml;
+        }
+
+        // Tự động load dữ liệu khi mở trang
+        fetchData();
+    </script>
+</body>
+</html>
