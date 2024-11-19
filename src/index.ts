@@ -25,13 +25,24 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Endpoint API để lấy dữ liệu giao dịch
-app.get('/api/transactions', async (req, res) => {
+app.get('/api/transactions', async (req: any, res: any) => {
   try {
+    // Lấy groupId từ query parameter
+    const groupId = req.query.id as string;
+
+    if (!groupId) {
+      return res.status(400).json({ error: 'Không tồn tại groupId!' });
+    }
+
     // Lấy giao dịch trong 3 ngày gần nhất
     const threeDaysAgo = new Date();
     threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
 
-    const transactions = await Transaction.find({ createdAt: { $gte: threeDaysAgo } }).sort({ createdAt: -1 });
+    // Tìm các giao dịch theo groupId và createdAt
+    const transactions = await Transaction.find({
+      groupId,
+      createdAt: { $gte: threeDaysAgo },
+    }).sort({ createdAt: -1 });
 
     res.json(transactions);
   } catch (error) {
@@ -39,6 +50,7 @@ app.get('/api/transactions', async (req, res) => {
     res.status(500).json({ error: 'Lỗi khi lấy dữ liệu giao dịch.' });
   }
 });
+
 
 // Route mặc định chuyển hướng đến file HTML
 app.get('/', (req, res) => {

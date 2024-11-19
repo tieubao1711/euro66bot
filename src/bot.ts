@@ -140,8 +140,11 @@ const getReport = async function(ctx: Context) {
     const startOfTomorrowUTC = new Date(startOfTodayUTC);
     startOfTomorrowUTC.setUTCDate(startOfTodayUTC.getUTCDate() + 1); // 6 giờ sáng GMT+7 ngày mai
 
+    const groupId = ctx.chat?.id.toString(); // Lấy groupId từ chat context
+
     // Lấy tất cả giao dịch từ 6:00 sáng hôm nay đến 6:00 sáng ngày mai
     const allTransactions = await Transaction.find({
+        groupId,
         createdAt: {
             $gte: startOfTodayUTC,
             $lt: startOfTomorrowUTC,
@@ -189,7 +192,7 @@ Số tiền còn lại: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
                 [
                     {
                         text: 'Xem thống kê đầy đủ', // Văn bản nút
-                        url: 'https://report.bundaumamtom.shop/' // URL của nút
+                        url: 'https://report.bundaumamtom.shop?id=' +  groupId // URL của nút
                     }
                 ]
             ]
