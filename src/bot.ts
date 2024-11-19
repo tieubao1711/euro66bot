@@ -74,30 +74,36 @@ bot.command('report', async (ctx) => {
     getReport(ctx);
 });
 
-
 const getReport = async function(ctx: Context) {
-    const transactions = await Transaction.find().sort({ createdAt: -1 }).limit(7);
-    const inTransactions = transactions.filter((t) => t.type === 'in').slice(0, 3);
-    const outTransactions = transactions.filter((t) => t.type === 'out').slice(0, 3);
+    // Lấy toàn bộ tổng số tiền nạp và rút
+    const allTransactions = await Transaction.find();
+    const totalIn = allTransactions
+        .filter((t) => t.type === 'in')
+        .reduce((sum, t) => sum + t.amount, 0);
+    const totalOut = allTransactions
+        .filter((t) => t.type === 'out')
+        .reduce((sum, t) => sum + t.amount, 0);
 
-    const totalIn = inTransactions.reduce((sum, t) => sum + t.amount, 0);
-    const totalOut = outTransactions.reduce((sum, t) => sum + t.amount, 0);
+    // Lấy 7 giao dịch gần nhất
+    const recentTransactions = await Transaction.find().sort({ createdAt: -1 }).limit(7);
+    const inTransactions = recentTransactions.filter((t) => t.type === 'in').slice(0, 3);
+    const outTransactions = recentTransactions.filter((t) => t.type === 'out').slice(0, 3);
 
     const inRate = 0.04; // Deposit fee: 4%
     const inTotal = totalIn * (1 - inRate);
 
     const report = `
-Giao dịch nạp tiền (${inTransactions.length} lần):
+Giao dịch nạp tiền (${inTransactions.length} lần gần nhất):
 ${inTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString()}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
-Giao dịch rút tiền (${outTransactions.length} lần):
+Giao dịch rút tiền (${outTransactions.length} lần gần nhất):
 ${outTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString()}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
 Phí nạp tiền: ${(inRate * 100).toFixed(0)}%
-Tổng số tiền nạp: ${totalIn.toLocaleString('vi-VN')} VND
+Tổng số tiền nạp (toàn bộ): ${totalIn.toLocaleString('vi-VN')} VND
 Tổng sau phí: ${inTotal.toLocaleString('vi-VN')} VND｜0
 
-Tổng số tiền rút: ${totalOut.toLocaleString('vi-VN')} VND｜0
+Tổng số tiền rút (toàn bộ): ${totalOut.toLocaleString('vi-VN')} VND｜0
 
 Số tiền cần thanh toán: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
 Số tiền đã thanh toán: 0 VND
@@ -118,4 +124,5 @@ Số tiền còn lại: ${(inTotal - totalOut).toLocaleString('vi-VN')} VND
         }
     });
 };
+
 
