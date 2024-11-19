@@ -1,0 +1,18 @@
+{
+    "compilerOptions": {
+      "target": "ES6",                          // Mã JavaScript được biên dịch về ES6
+      "module": "CommonJS",                     // Node.js sử dụng module CommonJS
+      "rootDir": "./src",                       // Thư mục chứa mã nguồn TypeScript
+      "outDir": "./dist",                       // Thư mục chứa file biên dịch JavaScript
+      "strict": true,                           // Bật chế độ kiểm tra nghiêm ngặt
+      "esModuleInterop": true,                  // Hỗ trợ import kiểu ES6 với các module CommonJS
+      "forceConsistentCasingInFileNames": true, // Đảm bảo tên file không phân biệt chữ hoa/thường
+      "skipLibCheck": true,                     // Bỏ qua kiểm tra định nghĩa thư viện
+      "resolveJsonModule": true,                // Hỗ trợ import file JSON
+      "types": ["node"],                        // Định nghĩa các type mặc định cho Node.js
+      "typeRoots": ["./node_modules/@types"]    // Thư mục chứa các type definition
+    },
+    "include": ["src"],                         // Chỉ biên dịch các file trong thư mục src
+    "exclude": ["node_modules"]                 // Loại trừ thư mục node_modules
+  }
+  
