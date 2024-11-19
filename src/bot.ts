@@ -172,7 +172,10 @@ const getReport = async function(ctx: Context) {
     const inTransactions = recentTransactions.filter((t) => t.type === 'in').slice(0, 3);
     const outTransactions = recentTransactions.filter((t) => t.type === 'out').slice(0, 3);
 
-    const inRate = 0.04; // Deposit fee: 4%
+    const _group = await Group.findOne({groupId: groupId});
+    if (!_group) return;
+
+    const inRate = _group.inRate;
     const inTotal = totalIn * (1 - inRate);
 
     const report = `
@@ -241,5 +244,44 @@ bot.command('huylenh', async (ctx) => {
     } catch (error) {
         console.error('Lỗi khi hủy giao dịch:', error);
         ctx.reply('Có lỗi xảy ra khi hủy giao dịch. Vui lòng thử lại.');
+    }
+});
+
+bot.command('fee', async (ctx) => {
+    if (ctx.chat.type !== 'group' && ctx.chat.type !== 'supergroup') {
+        return ctx.reply('Lệnh này chỉ hoạt động trong nhóm.');
+    }
+
+    if (!(await isAllowed(ctx))) {
+        return ctx.reply('Bạn không có quyền sử dụng lệnh này.');
+    }
+
+    const groupId = ctx.chat.id.toString();
+    const args = ctx.message.text.split(' ');
+
+    if (args.length < 2) {
+        return ctx.reply('Hãy sử dụng lệnh đúng cú pháp: /fee {rate}. Ví dụ: /fee 0.05 để đặt phí 5%.');
+    }
+
+    const newRate = parseFloat(args[1]);
+    if (isNaN(newRate) || newRate < 0 || newRate > 1) {
+        return ctx.reply('Vui lòng nhập một tỷ lệ hợp lệ (từ 0 đến 1). Ví dụ: /fee 0.05 để đặt phí 5%.');
+    }
+
+    try {
+        let group = await Group.findOne({ groupId });
+        if (!group) {
+            // Tạo nhóm mới nếu chưa tồn tại
+            group = await Group.create({ groupId, inRate: newRate });
+        } else {
+            // Cập nhật phí nếu nhóm đã tồn tại
+            group.inRate = newRate;
+            await group.save();
+        }
+
+        ctx.reply(`Phí nạp tiền của nhóm đã được đặt thành ${(newRate * 100).toFixed(2)}%.`);
+    } catch (error) {
+        console.error('Lỗi khi cập nhật phí nạp tiền:', error);
+        ctx.reply('Có lỗi xảy ra khi cập nhật phí. Vui lòng thử lại.');
     }
 });
