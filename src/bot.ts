@@ -76,7 +76,7 @@ bot.command('report', async (ctx) => {
 
 
 const getReport = async function(ctx: Context) {
-    const transactions = await Transaction.find().sort({ createdAt: -1 }).limit(6);
+    const transactions = await Transaction.find().sort({ createdAt: -1 }).limit(7);
     const inTransactions = transactions.filter((t) => t.type === 'in').slice(0, 3);
     const outTransactions = transactions.filter((t) => t.type === 'out').slice(0, 3);
 
