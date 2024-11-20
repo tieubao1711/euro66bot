@@ -185,7 +185,7 @@ ${inTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString('vi-VN')}    ${t
 Giao dịch rút tiền (${outTransactions.length} lần gần nhất):
 ${outTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString('vi-VN')}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
-Phí nạp tiền: ${(inRate * 100).toFixed(0)}%
+Phí nạp tiền: ${(inRate * 100).toFixed(1)}%
 Tổng số tiền nạp (toàn bộ): ${totalIn.toLocaleString('vi-VN')} VND
 Tổng sau phí: ${inTotal.toLocaleString('vi-VN')} VND｜0
 
