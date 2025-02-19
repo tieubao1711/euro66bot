@@ -183,7 +183,7 @@ Giao dịch nạp tiền (${inTransactions.length} lần gần nhất):
 ${inTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString('vi-VN')}    ${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
 
 Giao dịch rút tiền (${outTransactions.length} lần gần nhất):
-${outTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString('vi-VN')}    -${t.amount.toLocaleString('vi-VN')} VND`).join('\n')}
+${outTransactions.map((t) => `  ${t.createdAt.toLocaleTimeString('vi-VN')}    -${Math.abs(t.amount).toLocaleString('vi-VN')} VND`).join('\n')}
 
 Phí nạp tiền: ${(inRate * 100).toFixed(1)}%
 Tổng số tiền nạp (toàn bộ): ${totalIn.toLocaleString('vi-VN')} VND
